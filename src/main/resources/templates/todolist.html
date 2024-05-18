@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To Do List</title>
+    <link rel="stylesheet" th:href="@{../css/todolist.css}">
+</head>
+<body>
+<div class="header">
+    <h1>To Do List</h1>
+</div>
+<div class="container user-info">
+    <h2>Welcome, [[${user.username}]]!</h2>
+    <span sec:authorize="isAuthenticated">
+        <a class="btn btn-blue" th:href="@{/logout}">Logout</a>
+    </span>
+</div>
+<div class="container">
+    <div class="add-task">
+        <input class="textbox" id="taskDescription" type="text" placeholder="Enter task description">
+        <button class="btn btn-blue" th:onclick="addTask()">Add</button>
+    </div>
+    <div>
+        <table>
+            <thead>
+            <tr>
+                <th>Description</th>
+                <th>Completed</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="task : ${tasks}" th:classappend="${task.completed} ? 'completed-task'">
+                <td th:text="${task.description}"></td>
+                <td>
+                    <input type="checkbox" th:checked="${task.completed}" th:onclick="|toggleTaskCompletion(${task.id})|">
+                </td>
+                <td>
+                    <button class="btn btn-delete" th:onclick="|deleteTask(${task.id})|">Delete</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    function addTask() {
+        const description = document.getElementById("taskDescription").value;
+        const task = {
+            description: description
+        };
+        if( description.trim() !== "") {
+            fetch('/todolist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(task)
+            }).then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.message || 'Failed to add task');
+                    });
+                }
+                return response.json();
+            })
+                .then(newTask => {
+                    // Upon successful addition, update the table dynamically
+                    const table = document.querySelector('table tbody');
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+            <td>${newTask.description}</td>
+             <td>
+                <input type="checkbox" th:checked="${newTask.completed}" th:onclick="|toggleTaskCompletion(${newTask.id})|">
+            </td>
+            <td>
+                <button class="btn btn-delete" th:onclick="|deleteTask(${newTask.id})|">Delete</button>
+            </td>
+        `;
+                    table.appendChild(newRow);
+                    location.reload(); // Refresh page to see the updated list
+                    document.getElementById("taskDescription").value = ""; // Clear the input field
+                })
+                .catch(error => {
+                    console.error('Error adding task:', error);
+                });
+        }
+    }
+        function deleteTask(taskId) {
+        fetch('/todolist/' + taskId, {
+            method: 'DELETE'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to delete task');
+                }
+                location.reload(); // Refresh page to see the updated list
+            })
+            .catch(error => {
+                console.error('Error deleting task:', error);
+            });
+    }
+
+    function toggleTaskCompletion(taskId) {
+        fetch('/todolist/' + taskId + '/toggle', {
+            method: 'PATCH'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to toggle task completion');
+                }
+                location.reload(); // Refresh page to see the updated list
+            })
+            .catch(error => {
+                console.error('Error toggling task completion:', error);
+            });
+    }
+</script>
+</body>
+</html>
