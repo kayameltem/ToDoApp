@@ -1,0 +1,8 @@
+com.example.todoapp
+com.example.todoapp.configurations
+com.example.todoapp.controller
+com.example.todoapp.dto
+com.example.todoapp.exception
+com.example.todoapp.model
+com.example.todoapp.repository
+com.example.todoapp.service
